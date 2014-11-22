@@ -17,7 +17,13 @@ import UIKit
 class VisitsLog: NSObject {
    
     class func write(text:NSString){
-        var logText = ("[\(NSDate())] \(text)\n")
+        let formatter = NSDateFormatter()
+        formatter.dateStyle = NSDateFormatterStyle.ShortStyle
+        formatter.timeStyle = NSDateFormatterStyle.MediumStyle
+        let dateString = formatter.stringFromDate(NSDate())
+        
+        var logText = ("[\(dateString)] \(text)\n")
+        
         println("WRITE > \(logText)")
         var appendedString:NSString = read().stringByAppendingString(logText)
         var error:NSError?
@@ -29,12 +35,17 @@ class VisitsLog: NSObject {
     
     class func read()->NSString {
         var error:NSError?
-        var readText:NSString = NSString(contentsOfFile:path(), encoding:NSUTF8StringEncoding, error: &error)!
-        println("READ < \(readText)")
-        if error != nil {
-            println("[Log] Read Error - \(error!.localizedDescription)")
+        var readText:NSString? = NSString(contentsOfFile:path(), encoding:NSUTF8StringEncoding, error: &error)
+        if readText != nil {
+            println("READ < \(readText)")
+            if error != nil {
+                println("[Log] Read Error - \(error!.localizedDescription)")
+            }
+            return readText!
+        } else {
+            return "Could not read"
         }
-        return readText
+
     }
     
     class func clear()->Bool {
@@ -50,8 +61,15 @@ class VisitsLog: NSObject {
     //MARK: HELPER
     
     class func path()->NSString {
+        let dateFormatter = NSDateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        var dateString = dateFormatter.stringFromDate(NSDate())
+        
         var path:NSString = NSSearchPathForDirectoriesInDomains(NSSearchPathDirectory.DocumentDirectory, NSSearchPathDomainMask.AllDomainsMask, true).first! as NSString
-        var filePath = ("\(path)/visits.txt")
+        
+        var fileName = "\(path)/visits_"+dateString+".txt"
+        println("Filename: \(fileName)")
+        var filePath = (fileName)
         return filePath
     }
 

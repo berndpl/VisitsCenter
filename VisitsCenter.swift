@@ -25,33 +25,51 @@ class VisitsCenter: NSObject, CLLocationManagerDelegate {
     override init() {
         super.init()
         Logger.log(logSwitch, logMessage: "[Visits] PermissionsCenter Init")
-        //start()
+    }
+    
+    func setup() {
+        Logger.log(logSwitch, logMessage: "[Visits] Setup")        
+        locationManager.delegate = self
+    }
+    
+    func locationManager(manager: CLLocationManager!, didChangeAuthorizationStatus status: CLAuthorizationStatus) {
+        Logger.log(logSwitch, logMessage: "[Visits] Did Change Authorization Status")
+        switch status {
+        case .Authorized:
+            start()
+        default:
+            Logger.log(logSwitch, logMessage: "[Visits] Missing authorization")
+        }
     }
 
     func start() {
-        Logger.log(logSwitch, logMessage: "[Visits] Start")
-        VisitsLog.write(" Start")
+        Logger.log(logSwitch, logMessage: "[Visits] Start – Monitored Locations:\(LocationStore.shared.savedLocations.count)")
+        VisitsLog.write("[Visits] Start – Monitored Locations:\(LocationStore.shared.savedLocations.count)")
         locationManager.startMonitoringVisits()
     }
     
     func stop() {
         Logger.log(logSwitch, logMessage: "[Visits] Stop")
-        VisitsLog.write(" Stop")
+        VisitsLog.write("[Visits] Stop")
         locationManager.stopMonitoringVisits()
     }
     
     func locationManager(manager: CLLocationManager!, didVisit visit: CLVisit!) {
         Logger.log(logSwitch, logMessage: "[Visits] New Visit Information \(visit)")
+        
         var visitDescription:NSString = ("\(visit)")
         if visit.departureDate.isEqualToDate(NSDate.distantFuture() as NSDate) {
-            Logger.log(logSwitch, logMessage: "[Visits] Arrived")
-            NotificationsCenter.shared.show("Visit • Arrived", subTitle: visitDescription, info: nil, sound: true)
-            VisitsLog.write(" Arrived \(visitDescription)")
-        } else {
-            Logger.log(logSwitch, logMessage: "[Visits] Left")
-            NotificationsCenter.shared.show("Visit • Left", subTitle: visitDescription, info: nil, sound: true)
-            VisitsLog.write(" Left \(visitDescription)")
+            let matching = LocationStore.shared.matchingVisitWithSavedLocations(visit)
+            if matching.state == true {
+                Logger.log(logSwitch, logMessage: "[Visits] Arrived at \(matching.identifier!)")
+                NotificationsCenter.shared.show("Visit • Arrived at \(matching.identifier!)", subTitle: visitDescription, info: nil, sound: true)
+                VisitsLog.write("[Visits] Arrived at \(matching.identifier!)")
+            } else {
+                Logger.log(logSwitch, logMessage: "[Visits] Arrived *somewhere*")
+                NotificationsCenter.shared.show("Visit • Arrived *somewhere*", subTitle: visitDescription, info: nil, sound: true)
+                VisitsLog.write("[Visits] Arrived *somewhere*")
+            }
         }
     }
-    
+        
 }
